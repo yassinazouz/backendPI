@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/api/users', userRoutes);  // Mount the user routes on /api/users
+app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/uploads', express.static('uploads'));
 

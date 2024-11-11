@@ -1,6 +1,7 @@
+const Post = require('../models/postModel');
+const User = require('../models/userModel'); 
 const connectToDatabase = require('../config/database');
-const Post = require('../models/postModel'); 
-
+// Get all posts with user details populated
 async function getAllPosts(req, res) {
     try {
         const db = await connectToDatabase();
@@ -11,32 +12,46 @@ async function getAllPosts(req, res) {
         res.status(500).send({ error: "Error fetching posts" });
     }
 }
-async function addPost(req, res) {
-    console.log(req.body);  // Check the request body
 
-    const { object, text, media, upvote, downvote } = req.body;
 
+async function getPosts(req, res) {
     try {
         const db = await connectToDatabase();
-        const collection = db.collection('posts');
+        const posts = await db.collection('posts').find({}).toArray();
 
-        // Insert the post into the 'posts' collection
-        const result = await collection.insertOne({
+        const postsWithUserDetails = await Promise.all(posts.map(async (post) => {
+            const user = await db.collection('users').findOne({ _id: post.user }); 
+            post.userDetails = user;
+            return post;
+        }));
+
+        res.json(postsWithUserDetails);
+    } catch (err) {
+        console.error('Error fetching posts:', err);
+        res.status(500).json({ message: 'Error fetching posts' });
+    }
+}
+
+
+// Add a new post
+async function addPost(req, res) {
+    console.log(req.body);
+
+    const { object, text, media, upvote, downvote, user } = req.body;
+    try {
+        const newPost = new Post({
             object,
             text,
             media,
-            upvote,
-            downvote,
-            createdAt: new Date()  // Add createdAt field
+            upvote: upvote || 0,
+            downvote: downvote || 0,
+            user,
+            createdAt: new Date()
         });
-
-        // Get the inserted post using the insertedId
-        const insertedPost = await collection.findOne({ _id: result.insertedId });
-
-        // Send the response
+        const savedPost = await newPost.save();
         res.status(201).send({
             result: "Post created successfully",
-            post: insertedPost,  // Return the inserted post
+            post: savedPost
         });
     } catch (err) {
         console.error(err);
@@ -44,7 +59,4 @@ async function addPost(req, res) {
     }
 }
 
-module.exports = { getAllPosts, addPost };
-
-
-
+module.exports = { getAllPosts,addPost,getPosts };

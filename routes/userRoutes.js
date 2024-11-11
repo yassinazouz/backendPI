@@ -1,5 +1,5 @@
 const express = require('express');
-const { login, signup, getAllUsers, updateUser } = require('../controllers/userController');
+const { login, signup, getAllUsers, updateUser,getUserById } = require('../controllers/userController');
 const router = express.Router();
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
@@ -8,6 +8,7 @@ const upload = multer({ dest: 'uploads/' });
 router.post('/login', login);
 router.post('/signup', upload.single('image'), signup);
 router.get('/', getAllUsers);
+router.get('/:userId', getUserById);
 router.put('/update/:userId', updateUser);
 
 module.exports = router;

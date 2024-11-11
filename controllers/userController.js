@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const connectToDatabase = require('../config/database');
-const { ObjectId } = require('mongodb');  // Correct import for ObjectId
-const upload = require('../config/multerConfig'); // Import the custom multer configuration
+const { ObjectId } = require('mongodb');
+const upload = require('../config/multerConfig');
 
 async function getAllUsers(req, res) {
     try {
@@ -32,8 +32,8 @@ async function login(req, res) {
 }
 
 async function signup(req, res) {
-    // Handle the image upload using multer middleware
     upload.single('image')(req, res, async (err) => {
+
         if (err) {
             return res.status(400).send({ error: err.message });
         }
@@ -113,4 +113,23 @@ async function updateUser(req, res) {
     }
 }
 
-module.exports = { login, signup, getAllUsers, updateUser };
+async function getUserById(req, res) {
+    const { userId } = req.params; 
+    try {
+        const db = await connectToDatabase();
+        const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+        if (!user) {
+            return res.status(404).send({ error: "User not found" });
+        }
+        const posts = await db.collection('posts').find({ user: new ObjectId(userId) }).toArray();
+        res.send({
+            user,
+            posts
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Error fetching user by ID and their posts" });
+    }
+}
+
+module.exports = { login, signup, getAllUsers, updateUser,getUserById};
