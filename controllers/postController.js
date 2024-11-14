@@ -1,6 +1,7 @@
 const Post = require('../models/postModel');
 const User = require('../models/userModel'); 
 const connectToDatabase = require('../config/database');
+const mongoose = require('mongoose');
 // Get all posts with user details populated
 async function getAllPosts(req, res) {
     try {
@@ -59,4 +60,41 @@ async function addPost(req, res) {
     }
 }
 
-module.exports = { getAllPosts,addPost,getPosts };
+async function upvotePost(req, res) {
+    const { postId } = req.params;
+    try {
+        const db = await connectToDatabase(); // Connect to the database
+        const updatedPost = await db.collection('posts').findOneAndUpdate(
+            { _id: new mongoose.Types.ObjectId(postId) },
+            { $inc: { upvote: 1 } },
+            { returnOriginal: false } // Return the updated post
+        );
+
+
+        res.status(200).json({ message: "Upvoted successfully", post: updatedPost.value });
+    } catch (err) {
+        console.error('Error upvoting post:', err);
+        res.status(500).json({ error: "Error upvoting post" });
+    }
+}
+
+// Downvote a post
+async function downvotePost(req, res) {
+    const { postId } = req.params;
+    try {
+        const db = await connectToDatabase(); // Connect to the database
+        const updatedPost = await db.collection('posts').findOneAndUpdate(
+            { _id: new mongoose.Types.ObjectId(postId) },
+            { $inc: { downvote: 1 } },
+            { returnOriginal: false } // Return the updated post
+        );
+
+
+        res.status(200).json({ message: "Downvoted successfully", post: updatedPost.value });
+    } catch (err) {
+        console.error('Error downvoting post:', err);
+        res.status(500).json({ error: "Error downvoting post" });
+    }
+}
+
+module.exports = { getAllPosts,addPost,getPosts,upvotePost, downvotePost };
