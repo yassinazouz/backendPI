@@ -1,5 +1,6 @@
 const express = require('express');
 const { login, signup, getAllUsers, updateUser,getUserById } = require('../controllers/userController');
+const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });

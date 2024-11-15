@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const connectToDatabase = require('../config/database');
 const { ObjectId } = require('mongodb');
 const upload = require('../config/multerConfig');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 async function getAllUsers(req, res) {
     try {
@@ -20,14 +22,19 @@ async function login(req, res) {
     try {
         const db = await connectToDatabase();
         const user = await db.collection('users').findOne({ email });
+
         if (user && await bcrypt.compare(pass, user.password)) {
-            res.send({ result: user });
+            // Create JWT token
+            const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+            // Return the user details and token
+            res.send({ user, token });
         } else {
-            res.send({ result: "not found" });
+            res.status(401).send({ error: "Invalid email or password" });
         }
     } catch (err) {
         console.error(err);
-        res.status(500).send({ error: "Error finding user" });
+        res.status(500).send({ error: "Error logging in" });
     }
 }
 
