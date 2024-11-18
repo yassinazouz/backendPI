@@ -22,12 +22,8 @@ async function login(req, res) {
     try {
         const db = await connectToDatabase();
         const user = await db.collection('users').findOne({ email });
-
         if (user && await bcrypt.compare(pass, user.password)) {
-            // Create JWT token
             const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-            // Return the user details and token
             res.send({ user, token });
         } else {
             res.status(401).send({ error: "Invalid email or password" });
@@ -38,13 +34,9 @@ async function login(req, res) {
     }
 }
 
+/***********************************************************************************************************************************/
+
 async function signup(req, res) {
-    upload.single('image')(req, res, async (err) => {
-
-        if (err) {
-            return res.status(400).send({ error: err.message });
-        }
-
         const { name, email, pass, telnum } = req.body;
 
         if (!pass || pass.trim() === '') {
@@ -76,8 +68,8 @@ async function signup(req, res) {
             console.error(err);
             res.status(500).send({ error: "Error registering user" });
         }
-    });
-}
+    };
+
 
 async function updateUser(req, res) {
     const { userId } = req.params; // Assuming you're passing the user's ID in the URL parameter

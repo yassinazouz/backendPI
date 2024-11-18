@@ -3,7 +3,7 @@ const { login, signup, getAllUsers, updateUser,getUserById } = require('../contr
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+const upload = require('../config/multerConfig');
 
 // Define routes
 router.post('/login', login);

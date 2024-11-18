@@ -1,5 +1,5 @@
 const Post = require('../models/postModel');
-const User = require('../models/userModel'); 
+const User = require('../models/userModel');
 const connectToDatabase = require('../config/database');
 const mongoose = require('mongoose');
 // Get all posts with user details populated
