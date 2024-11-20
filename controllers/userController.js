@@ -23,7 +23,7 @@ async function login(req, res) {
         const db = await connectToDatabase();
         const user = await db.collection('users').findOne({ email });
         if (user && await bcrypt.compare(pass, user.password)) {
-            const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            const token = jwt.sign({ userId: user._id, Role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h' });
             res.send({ user, token });
         } else {
             res.status(401).send({ error: "Invalid email or password" });
@@ -52,15 +52,15 @@ async function signup(req, res) {
                 return res.send({ result: "already registered" });
             }
 
-            const saltRounds = 10;
-            const hashedPassword = await bcrypt.hash(pass, saltRounds);
+            const hashedPassword = await bcrypt.hash(pass, 10);
 
             await db.collection('users').insertOne({
                 name,
                 email,
                 password: hashedPassword,
                 telnum,
-                imageProfile
+                imageProfile,
+                role:"user"
             });
 
             res.send({ result: "registered successfully", imageProfile });
@@ -113,7 +113,7 @@ async function updateUser(req, res) {
 }
 
 async function getUserById(req, res) {
-    const { userId } = req.params; 
+    const { userId } = req.params;
     try {
         const db = await connectToDatabase();
         const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });

@@ -8,7 +8,7 @@ const upload = require('../config/multerConfig');
 // Define routes
 router.post('/login', login);
 router.post('/signup', upload.single('image'), signup);
-router.get('/', getAllUsers);
+router.get('/', authMiddleware.RoleauthMiddleware,getAllUsers);
 router.get('/:userId', getUserById);
 router.put('/update/:userId', updateUser);
 
