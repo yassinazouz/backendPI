@@ -4,6 +4,8 @@ const connectToDatabase = require('../config/database');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path'); 
+const { ObjectId } = require('mongodb');
+
 
 // Get all posts with full image content
 async function getAllPosts(req, res) {
@@ -12,14 +14,23 @@ async function getAllPosts(req, res) {
         const posts = await db.collection('posts').find({}).toArray();
 
         const postsWithImages = await Promise.all(posts.map(async (post) => {
+            if (post.user) {
+                const user = await db.collection('users').findOne({ _id: new ObjectId(post.user) });
+
+                console.log(user)
+                if (user) {
+                    post.userName = user.name;
+                }
+            }
+
+
             if (post.media && post.media.length > 0) {
-                // Read each image file and convert to base64
                 post.media = await Promise.all(post.media.map(async (mediaPath) => {
-                    const filePath = path.join(__dirname, '..', mediaPath); // Get full path to image
+                    const filePath = path.join(__dirname, '..', mediaPath);
                     try {
-                        const fileData = fs.readFileSync(filePath); // Read file
-                        const base64Image = fileData.toString('base64'); // Convert image to base64 string
-                        return `data:image/png;base64,${base64Image}`; // Return base64 string with image type prefix
+                        const fileData = fs.readFileSync(filePath);
+                        const base64Image = fileData.toString('base64');
+                        return `data:image/png;base64,${base64Image}`;
                     } catch (error) {
                         console.error(`Error reading file at ${filePath}:`, error);
                         return null;
@@ -35,6 +46,7 @@ async function getAllPosts(req, res) {
         res.status(500).send({ error: "Error fetching posts" });
     }
 }
+
 
 
 
@@ -69,7 +81,7 @@ const addPost = async (req, res) => {
 
     try {
         const db = await connectToDatabase();
-        const user = req.user.userId; // Assuming req.user contains the user's id
+        const user = req.user.userId; 
 
         await db.collection('posts').insertOne({
             content,
