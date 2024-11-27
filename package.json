@@ -16,11 +16,15 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "faker": "^6.6.6",
+    "gaxios": "^6.7.1",
+    "googleapis": "^144.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.10.0",
     "mongoose": "^8.8.1",
     "multer": "^1.4.5-lts.1",
-    "mysql": "^2.18.1"
+    "mysql": "^2.18.1",
+    "node-fetch": "^3.3.2",
+    "whatwg-url": "^14.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"

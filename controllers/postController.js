@@ -2,12 +2,32 @@ const Post = require('../models/postModel');
 const User = require('../models/userModel');
 const connectToDatabase = require('../config/database');
 const mongoose = require('mongoose');
-// Get all posts with user details populated
+const fs = require('fs');
+const path = require('path'); 
+const { ObjectId } = require('mongodb');
+const { uploadFileToDrive } = require('../config/path_to_drive_helper');
+
+
+
+
 async function getAllPosts(req, res) {
     try {
         const db = await connectToDatabase();
         const posts = await db.collection('posts').find({}).toArray();
-        res.status(200).send(posts);
+        const postsWithUserInfo = await Promise.all(posts.map(async (post) => {
+            if (post.user) {
+                const user = await db.collection('users').findOne({ _id: new ObjectId(post.user) });
+                if (user) {
+                    console.log(user)
+                    post.userName = user.name;
+                    post.imageProfile = user.image || '';
+                }
+            }
+            return post;
+        }));
+
+        // Send back the modified posts
+        res.status(200).send(postsWithUserInfo);
     } catch (err) {
         console.error(err);
         res.status(500).send({ error: "Error fetching posts" });
@@ -15,50 +35,48 @@ async function getAllPosts(req, res) {
 }
 
 
-async function getPosts(req, res) {
+/**************************************************************************************************************************************/
+
+const addPost = async (req, res) => {
+    const { content, title } = req.body;
+    if (!content || content.trim() === '') {
+        return res.status(400).send({ error: "Content is required" });
+    }
     try {
         const db = await connectToDatabase();
-        const posts = await db.collection('posts').find({}).toArray();
+        const user = req.user.userId;
 
-        const postsWithUserDetails = await Promise.all(posts.map(async (post) => {
-            const user = await db.collection('users').findOne({ _id: post.user }); 
-            post.userDetails = user;
-            return post;
-        }));
+        let mediaLinks = [];
+        if (req.files) {
+            for (const file of req.files) {
+                const filePath = path.join(__dirname, '..', 'uploads', file.filename); 
+                const fileLink = await uploadFileToDrive(filePath, file.filename);
+                mediaLinks.push(fileLink);
+                fs.unlinkSync(filePath);
+            }
+        }
 
-        res.json(postsWithUserDetails);
-    } catch (err) {
-        console.error('Error fetching posts:', err);
-        res.status(500).json({ message: 'Error fetching posts' });
-    }
-}
-
-
-// Add a new post
-async function addPost(req, res) {
-    console.log(req.body);
-
-    const { object, text, media, upvote, downvote, user } = req.body;
-    try {
-        const newPost = new Post({
-            object,
-            text,
-            media,
-            upvote: upvote || 0,
-            downvote: downvote || 0,
+        await db.collection('posts').insertOne({
+            title,
+            content,
+            media: mediaLinks,
+            upvote: 0,
+            downvote: 0,
+            createdAt: new Date(),
             user,
-            createdAt: new Date()
         });
-        const savedPost = await newPost.save();
-        res.status(201).send({
-            result: "Post created successfully",
-            post: savedPost
+
+        res.status(201).json({
+            message: "Post created successfully",
         });
     } catch (err) {
         console.error(err);
         res.status(500).send({ error: "Error creating post" });
     }
-}
+};
+
+/**************************************************************************************************************************************/
+
 
 async function upvotePost(req, res) {
     const { postId } = req.params;
@@ -97,4 +115,4 @@ async function downvotePost(req, res) {
     }
 }
 
-module.exports = { getAllPosts,addPost,getPosts,upvotePost, downvotePost };
+module.exports = { getAllPosts,addPost,upvotePost, downvotePost };
