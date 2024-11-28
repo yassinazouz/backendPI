@@ -25,7 +25,6 @@ async function login(req, res) {
         const user = await db.collection('users').findOne({ email });
         if (user && await bcrypt.compare(pass, user.password)) {
             const token = jwt.sign({ userId: user._id, Role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h' });
-            const token = jwt.sign({ userId: user._id, Role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h' });
             res.send({ user, token });
         } else {
             res.status(401).send({ error: "Invalid email or password" });
