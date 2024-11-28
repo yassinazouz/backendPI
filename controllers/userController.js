@@ -1,10 +1,11 @@
 const bcrypt = require('bcrypt');
 const connectToDatabase = require('../config/database');
 const { ObjectId } = require('mongodb');
-const upload = require('../config/multerConfig');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-
+const { uploadFileToDrive } = require('../config/path_to_drive_helper');
+const path = require('path');
+const fs = require('fs');
 async function getAllUsers(req, res) {
     try {
         const db = await connectToDatabase();
@@ -24,6 +25,7 @@ async function login(req, res) {
         const user = await db.collection('users').findOne({ email });
         if (user && await bcrypt.compare(pass, user.password)) {
             const token = jwt.sign({ userId: user._id, Role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h' });
+            const token = jwt.sign({ userId: user._id, Role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h' });
             res.send({ user, token });
         } else {
             res.status(401).send({ error: "Invalid email or password" });
@@ -36,39 +38,43 @@ async function login(req, res) {
 
 /***********************************************************************************************************************************/
 
+
 async function signup(req, res) {
-        const { name, email, pass, telnum } = req.body;
-
-        if (!pass || pass.trim() === '') {
-            return res.status(400).send({ error: "Password is required" });
+    console.log(req.body)
+    const { name, email, pass, telnum } = req.body;
+    
+    let imageProfile = ''; 
+    try {
+        if (req.file) {
+            const filePath = path.join(__dirname, '..', 'uploads',req.file.filename);
+            
+            imageProfile = await uploadFileToDrive(filePath, req.file.filename);
+            fs.unlinkSync(filePath);
         }
 
-        const imageProfile = req.file ? `/uploads/${req.file.filename}` : '';
-
-        try {
-            const db = await connectToDatabase();
-            const existingUser = await db.collection('users').findOne({ email });
-            if (existingUser) {
-                return res.send({ result: "already registered" });
-            }
-
-            const hashedPassword = await bcrypt.hash(pass, 10);
-
-            await db.collection('users').insertOne({
-                name,
-                email,
-                password: hashedPassword,
-                telnum,
-                imageProfile,
-                role:"user"
-            });
-
-            res.send({ result: "registered successfully", imageProfile });
-        } catch (err) {
-            console.error(err);
-            res.status(500).send({ error: "Error registering user" });
+        const db = await connectToDatabase();
+        const existingUser = await db.collection('users').findOne({ email });
+        if (existingUser) {
+            return res.send({ result: "already registered" });
         }
-    };
+
+        const hashedPassword = await bcrypt.hash(pass, 10);
+
+        await db.collection('users').insertOne({
+            name,
+            email,
+            password: hashedPassword,
+            telnum,
+            image: imageProfile,
+            role: "user"
+        });
+
+        res.send({ result: "registered successfully", imageProfile });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Error registering user" });
+    }
+};
 
 
 async function updateUser(req, res) {

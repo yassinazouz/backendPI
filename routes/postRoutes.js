@@ -8,7 +8,6 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 router.get('/', postController.getAllPosts);
 router.post('/add', upload.array('media', 10),authMiddleware.authMiddleware,postController.addPost);
-router.get('/postusers', postController.getPosts);
 router.post('/:postId/upvote', postController.upvotePost);
 router.post('/:postId/downvote', postController.downvotePost);
 
